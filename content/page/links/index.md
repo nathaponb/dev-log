@@ -1,4 +1,4 @@
----
+<!-- ---
 title: Links
 links:
   - title: GitHub
@@ -12,7 +12,7 @@ menu:
             icon: link
 
 comments: false
----
+--- -->
 
 To use this feature, add `links` section to frontmatter.
 
