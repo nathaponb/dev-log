@@ -1,9 +1,9 @@
 ---
 title: เทียบประสิทธิภาพของ slice แบบ กำหนดและไม่กำหนดความจุ (Capacity)
 description: ""
-slug: เทียบประสิทธิภาพของ-slice-แบบ-กำหนดและไม่กำหนดความจุ-(capacity)
+slug: เทียบประสิทธิภาพของ-slice-แบบ-กำหนดและไม่กำหนดความจุ-capacity
 date: 2026-01-22 00:00:00+0000
-image: cover.jpg
+image: IMG_20251101_083648.jpg
 categories:
     - devlog
 tags:
