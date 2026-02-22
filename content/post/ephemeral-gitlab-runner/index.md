@@ -1,9 +1,9 @@
 ---
-title: บันทึกสิ่งที่ได้เรียนรู้จากการ setup gitlab self host ephimeral runner
+title: บันทึกสิ่งที่ได้เรียนรู้จากการทำ Gitlab self-managed runners
 draft: true
-description: "บันทึกขั้นตอนและปัญหาที่เจอในการทำ Ephemeral Runner"
-slug: บันทึกสิ่งที่ได้เรียนรู้จากการ-setup-gitlab-self-host-ephimeral-runner
-date: 2026-01-22 00:00:00+0000
+description: "บันทึกขั้นตอนและปัญหาที่เจอในการทำ gitlab self-managed runners กับ Digital Ocean"
+slug: บันทึกสิ่งที่ได้เรียนรู้จากการ-ทำ-gitlab-self-host-runners
+date: 2026-02-22 00:00:00+0000
 image: IMG_20260101_073828.jpg
 categories:
     - devlog
@@ -11,89 +11,74 @@ tags: ["gitlab", "runner", "docker"]
 weight: 1       # You can add weight to some posts to override the default sorting (date descending)
 ---
 
-# บันทึกสิ่งที่ได้เรียนรู้จากการ setup gitlab self-host ephimeral runner
+# บันทึกสิ่งที่ได้เรียนรู้จากการทำ Gitlab self-managed runners
 
-1. อธิบายทำไมต้องมี self-host gitlab runner, กำลังทำอะไร ช่วยบันทึกสิ่งที่คุณกำลังทำ ณ วันนี้ลงไปใน post ด้วยทางอ้อม
+## จุดเริ่มต้น
+ผมเริ่มมองหาวิธีการทำ Self-managed Runners เพราะกำลังอยู่ในช่วงดีไซน์ระบบให้กับ Side Project ตัวหนึ่ง และแน่นอนว่าตัว CI/CD ถือเป็น Component สำคัญในส่วนของ Infrastructure ตามที่ผมได้วางโครงสร้างไว้<br>
+โดยปกติแล้ว Shared Runners บน GitLab จะเป็นการแชร์ทรัพยากรร่วมกับผู้ใช้อื่น ซึ่งในแง่ของ Security แม้จะมีระบบ Isolation แต่การที่ Source Code หรือ Logs สำคัญต้องไปรันบน Infrastructure ที่เราไม่ได้ควบคุม 100% ก็อาจจะไม่ตอบโจทย์เรื่อง Privacy เท่าที่ควร<br> จุดนี้เองที่ทำให้ผมตัดสินใจหันมาใช้ Self-managed Runner เพื่อให้สามารถควบคุมสภาพแวดล้อมทั้งหมดได้ด้วยตัวเองครับ
 
-ผมเริ่มมองหาวิธีการทำ self-host runner เนื่องจากกำลังแพลนและดีไซต์ระบบ ทำโปรเจค saas ส่วนตัว การ poc ความเป็นไปได้ของ infastructure ตามที่ดีไซต์ไว้จึงเป็นสิ่งที่จำเป็น ก่อนที่จะลงมือทำจริงๆ<br>
-infastructure ของผมนั้นง่ายๆเลย คือ ใช้ hashicorp nomad cluster ในการ deploy แอปต่างๆ (เป็นต้องกล่าวถึงไหม เพราะตอน walkthru setup อาจไม่ได้ deploy (CD) เข้าไปยัง nomad?)<br>
-ใช้ gitlab ในการเก็บ source code และรัน ci/cd pipeline<br>
-แต่เนื่องจากเคยได้อ่านบทความผ่านตามาว่า gitlab runner ที่เราใช้รัน ci/cd pipeline กันฟรีๆนั่นเป็นแบบ shared runner กล่าวคือ ci/cd pipeline และ source code ของเรา ถูกนำไปรันบน runner ร่วมกันกับของคนอื่นๆ ซึ่งจุดนี้นี่เองที่ทำให้ผมกลับมาฉุกคิดและกังวนถึงเรื่องความปลอดภัยและการรั่วไหลของข้อมูลที่อาจเกิดขึ้นได้<br>
-ดังนั้นไหนๆก็กำลังแพลนและ poc อยู่แล้ว ก็ลองสร้าง runner เองเลยดีกว่า.
+ในการสร้าง Runner นั้น สิ่งสำคัญคือเราต้องเลือก Executor ซึ่งเปรียบเสมือน 'Driver' ที่คอยกำหนดว่างานใน Pipeline ของเราจะถูกรันด้วยสภาพแวดล้อมแบบไหน โดย GitLab มี Executor ให้เลือกใช้งานหลากหลายรูปแบบตามความเหมาะสมของ Infrastructure เช่น Docker, Kubernetes, Instance (Shell) หรือแม้กระทั่ง Docker Autoscaler สำหรับงานที่ต้องการขยายตัวตามปริมาณการใช้งานจริงครับ
 
-> runner คือ agent ที่ execute หรือรัน ci/cd jobs ใน pipeline
+1. **Docker Executor** เป็นตัวเลือกยอดนิยมที่นำเอาเทคโนโลยี Container มาใช้ในการรัน Jobs ครับ<br>
+ข้อดี: การ Setup และการใช้งานนั้นตรงไปตรงมามากไม่ซับซ้อน เหมาะสำหรับคนที่คุ้นเคยกับ Docker อยู่แล้ว
+ข้อเสีย: เนื่องจาก Container จะดึงทรัพยากร (CPU/RAM) มาจากเครื่อง Host โดยตรง ดังนั้นเราจึงต้องเตรียมสเปกเครื่อง VPS ให้เพียงพอต่อความต้องการของ Runner<br>
+หากเราจัดสรรสเปกไม่ดี หรือรัน Jobs พร้อมกันหลายตัวจนทรัพยากรไม่พอ (Resource Exhaustion) อาจส่งผลให้ CI/CD Pipeline ล่มหรือทำงานช้าลงได้<br> และแน่นอนว่าการเช่า VPS สเปกสูงๆ เพื่อรองรับโหลดงานหนักๆ ก็ย่อมมีค่าใช้จ่าย (Fixed Cost) ที่สูงตามมาด้วยเช่นกัน
 
-ผมลองหาวิธีการสร้าง runner แบบส่วนตัว (self-hosted runner) อยู่สักพักก็พบว่า gitlab มี document ที่ค่อนข้างดีเลยทีเดียวในการช่วย setup self-host runner
+2. **Kubernetes Executor**: หาก Infrastructure ที่ผมดีไซน์ไว้มีการใช้ Kubernetes เป็น Base อยู่แล้ว ผมคงไม่ลังเลที่จะเลือกใช้ Executor ตัวนี้เลยครับ<br>
+ข้อดี: คือความสามารถในการใช้ Kubernetes Pods รัน Jobs ซึ่งสามารถ Scale ได้อย่างยืดหยุ่นและมีประสิทธิภาพสูงมาก (Auto-scaling ตามจำนวนงานที่เข้ามา)<br>
+ข้อเสีย (ในบริบทของผม): คือความซับซ้อนในการ Setup เพราะผมไม่ได้วางแผนจะใช้ Kubernetes Cluster สำหรับโปรเจกต์นี้ตั้งแต่ต้น การต้องมาเซต Cluster เพียงเพื่อรัน Runner อย่างเดียวอาจจะดูเป็นการ 'ขี่ช้างจับตั๊กแตน' เกินไป ผมจึงตัดสินใจข้ามตัวเลือกนี้ไปครับ
 
-โดยการสร้าง runner จำเป็นต้องเลือก executor ที่อาจมองได้ว่าเหมือนเป็น runtime ของ runner อีกที<br>
-โดย gitlab มี executor ให้เลือกหลากหลายตัวด้วยกัน เช่น Docker, Docker autoscaler, Kubernates, Instance เป็นต้น
-> executor คือ รูปแบบการรันและ tool ที่ใช้ในการรัน job ของ ci/cd
+3. **Instance Executor**: เป็น Executor ที่ใช้ Fleeting เพื่อติดต่อกับ Cloud Provider ในการสร้าง Instance Group (VPS/VM) ขึ้นมาใหม่แบบชั่วคราว (Ephemeral Runner) เพื่อใช้รัน Job โดยเฉพาะ<br>
+ข้อดี: เป็นระบบ Auto-scaling ที่แท้จริง เพราะเครื่อง runner ย่อย จะถูกสร้างขึ้นมาเมื่อมีงาน และทำลายทิ้งเมื่อเสร็จงาน วิธีนี้ช่วยควบคุมค่าใช้จ่ายได้ตามการใช้งานจริง (Pay-per-use)<br>
+ข้อเสีย: เนื่องจาก Instance ที่ถูกสร้างขึ้นมามักจะเป็น Bare VPS (เครื่องเปล่า) การจัดการ Environment หรือติดตั้ง Dependency ต่างๆ ให้พร้อมใช้งานตามที่ Pipeline ต้องการนั้นทำได้ยากและขาดความยืดหยุ่นพอสมควร<br>
+ยกตัวอย่างเช่น: หากใน Pipeline ของเราต้องการ Library ตัวเดียวกันแต่คนละ Version การ Setup ลงบน OS ของ VPS โดยตรงจะเกิดความซับซ้อนที่ต้องจัดการ version ดีให้ดี ซึ่งไม่สะดวกเท่ากับการใช้ Docker Image ที่แยก Environment มาให้เรียบร้อยแล้วครับ
 
-1. Docker เป็น executor ตัวหนึ่งที่ใช้ความสามารถของเทคโนโลยี container เข้ามารัน job โดยแต่ละ job สามารถ ใช้ container แยกรันกันไปได้<br>
-ข้อดีคือ การ setup และการใช้งานตรงไปตรงมา ไม่ซับซ้อน<br>
-แต่ข้อเสียก็คือ เราต้องมี spec เครื่อง vps ที่มากพอในการรัน job ในทุกๆครั้ง ซึ่งบางครั้งหากจัดสรร spec ไม่ดีหรือเพียงพอต่อความต้องการของ runner อาจมีปัญหาในการรัน ci/cd pipeline เกิดขึ้นได้<br>
-และในมุมของค่าใช้จ่ายในการมี vps ที่ต้องการใช้ spec เยอะ อาจมีค่าใช้จ่ายค่อนข้างสูงตามมาด้วย.
+4. **Docker Autoscaler Executor**: นี่คือตัวเลือกที่นำข้อดีของ Docker และ Instance Executor มาประยุกต์เข้าด้วยกัน โดยยังคงใช้เทคโนโลยี Fleeting ในการจัดการ Auto-scaling ครับ<br>
+จุดเด่น: คือการนำความสามารถของ Docker มาใช้แยก Environment และ Dependency ของแต่ละ Job ได้อย่างอิสระ (Isolation) ในขณะเดียวกันก็นำจุดเด่นของ Instance มาใช้ในการสร้าง VPS ขึ้นมาใหม่เป็น Ephemeral Runners (ตัวรันงานแบบชั่วคราว)<br>
+ผลลัพธ์: ทำให้ CI/CD Jobs ของเราถูกรันบนเครื่องที่สร้างขึ้นมาใหม่เพื่อความปลอดภัยสูงสุด (Security) และเมื่อรันงานสำเร็จ เครื่องเหล่านั้นก็จะถูกลบทิ้งทันที เพื่อช่วยลดค่าใช้จ่าย (Cost Optimization)
 
-2. Kubernates, หาก infastructure โปรเจคนี้ของผมดีไซส์ให้ใช้ Kubernates เป็น base อยู่ก่อนแล้ว ผมคงไม่ลังเลที่จะใช้ executor ตัวนี้
-ข้อดีคือ การใช้ kubernates pods ในการรัน job<br>
-ส่วนข้อเสียคือ ผมไม่ได้ตั้งใจจะใช้ kubernates cluster ในโปรเจคนี้ตั้งแต่แรก จึงจำเป็นต้องข้ามตัวเลือกนี้ไป.
-
-3. Instance เป็น executor ตัวหนึ่งที่ใช้ fleeting plugin (refไปยังคำอธิบายด้านล่าง)เป็นตัวกลางในการติดต่อกับ cloud provider api เพื่อสร้าง instance group (vps) ขึ้นมาใหม่ชั่วคราวในการใช้เป็น ephemical runner<br>
-ข้อดีคือ เป็น executor แบบ auto scaling ที่สร้าง vps ขึ้นมาใหม่เพื่อรัน job
-ข้อเสียคือ เนื่องจาก vps (ephemical runner) ที่ถูกสร้างขึ้นมาเป็น bare metal เปล่าๆ การ config vps และติดตั้ง dependency ต่างๆให้รองรับสิ่งที่ ci/cd pipeline ต้องการ ค่อนค้างไม่ยืดหยุ่น ยกตัวอย่าง เช่น ใน pipeline ของ microservices ของเรา อาจต้องการใช้ library ตัวเดียวกันแต่คนละ version การ set up ให้ vps (ephemical runner) ใช้งานได้จึงมาตกอยู่ที่การ set up vps ซึ่งค่อนข้างยุ่งยากและไม่ยืดหยุ่น
-> ephemical runner คือ runner ย่อย/เล็กๆ ที่ถูกสร้างขึ้นมาชั่วคราวเพื่อรัน job เมื่อรันเสร็จจะถูกลบออกไป<br>
-
-4. Docker AutoScaler, เป็น executor อีกตัวที่ใช้ fleeting plugin ในการทำ auto scaling เป็น executor ที่ประยุกต์ความสามารถของ executor Docker และ Instance เข้าด้วยกัน คือ ใช้ข้อดีของ Docker ในการรันและสะดวกในการ แยก dependency ของแต่ละ job
-และยังเป็น auto scaler ที่ใช้ fleeting plugin ในการติดต่อกับ cloud provider เพื่อสร้าง instance group (vps) (ที่มี docker) ใหม่ชั่วคราวขึ้นมาเพื่อรัน job ในระยะเวลาสั้นๆ เสร็จแล้วจึงลบ vps นั้นออกไปเพื่อไม่ให้เปลือง cost และด้านความปลอดภัย.
-
-> fleeting คือ library ที่เป็นตัวกลาง (abstraction layer) ระหว่าง gitlab-runner และ cloud provider เพื่อทำ auto-scaling<br>
-โดย fleeting จะไม่ได้ติดต่อกับ cloud provider โดยตรง แต่จะใช้ fleeting-plugin ซึ่งเป็น sub process (หรือจะคิดว่าเป็น api server ก็ได้) ที่ implement interface ของ fleeting เข้ากับ cloud provider APIs อีกที
-ซึ่งนี้เป็นเหตุผลว่าทำไม gitlab มี support fleeting plugin ให้แค่ cloud provider ใหญ่เท่านั้น เพราะ artchitecture ที่ออกแบบมาให้เป็นแบบ plug & adapter ที่ gitlab fleeting ไม่ได้สนใจว่า cloud provider ข้างหลังจะเป็นเจ้าไหน แค่ plugin implement interface ของ fleeting ก็เพียงพอ<br>
-https://docs.gitlab.com/runner/fleet_scaling/fleeting/
-โดยเดิมที gitlab ใช้ executor ที่ชื่อว่า Docker machine ในการทำ auto scaling แต่เนื่องด้วยโปรเจค Docker machine ไม่ได้ถูกพัฒนาและดูแลต่อ ดังนั้น gitlab จึงต้องมองหา solution ใหม่ จึงได้พัฒนา fleeting ซึ่งเป็น library ที่ gitlab เรียกว่า [Next Runner Auto-scaling Architecture](https://handbook.gitlab.com/handbook/engineering/architecture/design-documents/runner_scaling/) เพื่อตอบโจทย์การทำ auto scaling ต่อไป<br>
-โดย fleeting plugin คือ library ที่มี interface ที่สามารถปลั๊กกับ cloud provider APIs ได้ 
-[gitlab-fleeting-repository](https://gitlab.com/gitlab-org/fleeting/fleeting) 
+<a id="fleeting-explain"></a>
+>Fleeting คือ Library ที่ทำหน้าที่เป็นตัวกลาง (Abstraction Layer) ระหว่าง GitLab Runner และ Cloud Provider เพื่อจัดการเรื่อง Auto-scaling โดยเฉพาะ<br>
+โดย Fleeting จะไม่ได้สื่อสารกับ Cloud Provider โดยตรง แต่จะใช้ Fleeting Plugin ซึ่งถูกรันขึ้นมาเป็น Sub-process อีกที (หรือจะมองว่าเป็น API Server เล็กๆ ที่รอรับคำสั่งจาก Fleeting ก็ได้)
+ตัว Fleeting Plugin จะทำหน้าที่ implement interface ของ Fleeting ให้เข้ากับ API ของแต่ละ Cloud Provider นี่คือเหตุผลที่ Gitlab มี Support Plugin ให้เฉพาะ Cloud เจ้าใหญ่ๆ (เช่น AWS, GCP, Azure) เพราะต้องมีการเขียน Plug & Adapter เฉพาะตัวขึ้นมานั่นเอง<br>
+_โดยเดิมที GitLab ใช้ Docker Machine ในการทำ Auto-scaling มาโดยตลอด แต่เนื่องจาก Docker Machine หยุดการพัฒนาและไม่มีการดูแลต่อ<br> GitLab จึงต้องหา Solution ของตัวเองขึ้นมาใหม่ในชื่อ ['Next Runner Auto-scaling Architecture'](https://handbook.gitlab.com/handbook/engineering/architecture/design-documents/runner_scaling/) เพื่อมาแทนที่และเพื่อตอบโจทย์การทำ auto scaling ต่อไป._<br>
+[👉gitlab-fleeting-repository](https://gitlab.com/gitlab-org/fleeting/fleeting) 
 ![gitlab fleeting](gitlab-fleeting.drawio.svg)
 
-executor ที่ดูเหมือนจะตอบโจทย์ความต้องการของผมมากที่สุด คือ Docker Autoscaler
-แต่พอลองอ่านรายละเอียดการ setup ผมกลับพบว่า gitlab มี fleeting plugin ให้เฉพาะ cloud provider เจ้าใหญ่ๆเท่านั้น อาทิ เช่น aws, azure, google cloud<br>
-โดยส่วนใหญ่ผมจะใช้ Digital Ocean เป็นหลัก สำหรับโปรเจคส่วนตัว และโปรเจคที่มี scale ที่ไม่ใหญ่มาก
-ตอนนี้ผมจึงมี 2 ทางเลือกคือ เปลี่ยน cloud provider เพื่อความสะดวกในการ setup ต่อ หรือจะลองหา fleeting plugin ของ digital ocean ดูก่อน
-โดย fleeting plugin คือ libery ที่เป็น standard กำหนดโดย gitlab ในการเป็นตัวกลางระหว่าง gitlab และ cloud provider ในการทำ auto scaling หรือ สร้าง ephemical runner (vps) ขึ้นมาใหม่ชั่วคราวในการรัน job
-หากลองไล่ดู source code ของ fleeting plugin ของ cloud provider ที่ gitlab มีให้ น่าจะสามารถ เขียน fleeting plugin ขึ้นมาเองได้ หากไม่มีสำหรับ Digital ocean จริงๆ
-โดย implement methods ที่ gitlab ต้องการ เข้ากับ api ของ Digital Ocean<br>
-แต่โชคดี ที่เจอ ที่มีคนเคยสร้าง fleeting plugin ของ Digital Ocean ไว้ <3
+## ปัญหา
+หลังจากที่ผมตัดสินใจได้ว่า Docker Autoscaler Executor คือตัวเลือกที่ลงตัวที่สุด แต่เมื่อเริ่มลงลึกในรายละเอียดการติดตั้ง ผมกลับเจออุปสรรคสำคัญเข้าจนได้<br>
+เพราะในปัจจุบัน GitLab มี Official Fleeting Plugin รองรับเฉพาะ Cloud Provider ยักษ์ใหญ่เท่านั้น เช่น AWS, Azure และ Google Cloud แต่สำหรับ Side Project หรือโปรเจกต์ขนาดกลางที่ผมทำอยู่เป็นประจำ ผมมักจะเลือกใช้ DigitalOcean เป็นหลัก<br>
+ในตอนนี้ผมจึงมีทางเลือกอยู่ 2 ทาง:<br>
+**ย้ายค่าย**: ยอมเปลี่ยนไปใช้ AWS หรือ Google Cloud เพื่อให้ Setup ได้ง่ายตามคู่มือ (แต่ก็ต้องแลกมาด้วยค่าใช้จ่ายและ Configuration ที่ซับซ้อนขึ้น)<br>
+**สู้ต่อ**: ลองค้นหาว่ามีใครทำ Fleeting Plugin สำหรับ DigitalOcean ไว้บ้าง หรือถ้าแย่ที่สุด... ผมอาจจะต้องเขียน Plugin ขึ้นมาเองโดยการแกะ Source Code ของเจ้าอื่นมา Implement Interface ให้เข้ากับ DigitalOcean API<br>
+แต่ในความโชคร้ายยังมีความโชคดีครับ เพราะหลังจากหาไปสักพัก ผมก็ไปเจอ Open-source project ที่มีคนทำ [DigitalOcean Fleeting Plugin](https://gitlab.com/bearx3f/fleeting-plugin-digitalocean) เตรียมไว้ให้เรียบร้อยแล้ว.
 
+## ลงมือทำ
 เมื่อหาข้อมูลพอสมควรแล้ว ทีนี้ก็เหลือแค่ลงมือทำ
 
-### 1. เตรียม gitlab reposioty และ vps
-รายการที่ต้องใช้
-* gitlab repository
-* digital ocean account
+### เตรียม GitLab Reposioty
 
-1.1 ก่อนอื่นเลย สร้าง repository ขึ้นมาเพื่อเก็บ source code และ ci/cd pipeline<br>
-1.2 ใส่ tags เพื่อให้เราสามารถกำหนด runner ใน pipeline ได้<br>
-1.3 กด create และจะได้ token ให้เราเก็บ token นี้ไว้ให้ดี<br>
-1.2 สร้าง runner โดยเลือกที่เมนู runner และ กดสร้าง, สำคัญ! เก็บ token เอาไว้
+* สร้าง Repository: เริ่มต้นด้วยการสร้างโปรเจกต์สำหรับเก็บ Source Code และไฟล์ CI/CD Pipeline ของเราให้เรียบร้อย
+* สร้าง Runner บน GitLab UI: * ไปที่เมนู Settings > CI/CD แล้วขยายหัวข้อ Runners, กดปุ่ม New project runner กำหนดค่าเบื้องต้น:
+* กำหนด Tag ให้กับ Runner ตัวนี้ (เช่น my-project-1) เพื่อให้เราสามารถระบุในไฟล์ .gitlab-ci.yml ได้ว่า Job ไหนจะให้ Runner ตัวนี้เป็นคนรัน
+* เก็บ Token สำคัญ: หลังจากกด Create runner เราจะได้ Authentication Token (ขึ้นต้นด้วย glrt-) ให้คัดลอกและเก็บไว้ให้ดีครับ เพราะ GitLab จะแสดงให้เห็นแค่ครั้งเดียว และเราต้องใช้มันในขั้นตอน Configuration
 ![create-project-runner](gitlab-create-project-runner.png)
 
-
-1.2. เตรียม digital ocean token เพื่อให้ runner manager ใช้ติดต่อกับ digital ocean เพื่อสร้าง ephemical runners<br>
+### เตรียม VPS สำหรับ Runner Manager
+* เตรียม API Token (แบบ Read/Write) เพื่อให้ Runner Manager ใช้ติดต่อกับ DigitalOcean ในการสร้างและลบ Ephemeral Runners โดยอัตโนมัติ<br>
 ![](do-gen-token.png)
+* สร้าง VPS สำหรับ Manager Node: แม้ตัว Runner Manager จะไม่ได้รัน Job เอง แต่ต้องคอยจัดการคิวและรัน Docker สเปกที่เลือกเป็น s-1vcpu-512mb ($4/mo) อาจจะค่อนข้างตึงไปนิดสำหรับการรัน Docker + GitLab Runner ในระยะยาว หากเป็นไปได้แนะนำขยับเป็น 1GB RAM (s-1vcpu-1gb) จะเสถียรกว่าครับ
+| Property | Value |
+|---|---|
+| Region | Singapore (sgp1) |
+| Size | $4/month (s-1vcpu-512mb-10gb) |
+| OS | Ubuntu (ubuntu-24-04-x64) |
 
-1.3. สร้าง vps โดยเลือก แบบ 2gb ซึ่งเพียงพอต่อ การเป็น runner manager<br>
-- Region: Singapore (sgp1)
-- Size: $4/month (s-1vcpu-512mb-10gb)
-- OS: Ubuntu (ubuntu-24-04-x64)
+> SSH เข้าไปใน VPS.
 
+* ติดตั้ง docker https://docs.docker.com/engine/install/ubuntu/<br> _Docker Autoscaler เครื่อง Manager จำเป็นต้องมี Docker Engine เพื่อจัดการ Environment เบื้องต้น_
 
-### Config VPS
-เมื่อสร้าง vps มาแล้ว เรามา config กัน
-
-1. ssh เข้าไปใน vps และทำการ ติดตั้ง docker เพราะ exucutor ที่ผมจะใช้ คือ Docker autoscaler
-ทำตามเพื่อติดตั้ง docker บน ubuntu https://docs.docker.com/engine/install/ubuntu/
-
-2. ติดตั้ง gitlab-runner
+* ติดตั้ง GitLab Runner
 ```sh
 # Download the binary for your system (amd64)
 sudo curl -L --output /usr/local/bin/gitlab-runner https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-linux-amd64
@@ -106,19 +91,23 @@ sudo useradd --comment 'GitLab Runner' --create-home gitlab-runner --shell /bin/
 
 # Install and run as a service
 sudo gitlab-runner install --user=gitlab-runner --working-directory=/home/gitlab-runner
-        sudo gitlab-runner start
+
+sudo gitlab-runner start
 ```
 
-3. ต่อมา เราจำเป็นต้องมี ไฟล์ binary fleeting-plugin ของ digital ocean เนื่องจากที่ได้อธิบายไปในตอนต้นว่า gitlab runner ไม่ได้มี official fleeting plugin มาให้ ดังนั้น เราต้อง compile เองจาก source code<br>
+* ต่อมา เราจำเป็นต้องมี ไฟล์ binary fleeting-plugin ของ digital ocean เนื่องจากที่ได้อธิบายไปในตอนต้นว่า gitlab runner ไม่ได้มี official fleeting plugin มาให้ ดังนั้น เราต้อง compile เองจาก source code<br>
 โดยใช้วิธี [manual install](https://docs.gitlab.com/runner/fleet_scaling/fleeting/#:~:text=version%201.5.1.-,Install%20binary%20manually,-To%20manually%20install)<br>
-3.1. ให้ clone git repository https://gitlab.com/bearx3f/fleeting-plugin-digitalocean<br>
-3.2. compile source code 
 ```sh
 export PACKAGE_REGISTRY_URL="https://gitlab.com/api/v4/projects/75321582/packages/generic/fleeting-plugin-digitalocean"
 
 curl -sSL https://gitlab.com/bearx3f/fleeting-plugin-digitalocean/-/raw/main/install.sh | bash
 ```
-3.3. สร้างไฟล์ config.toml ที่ path /etc/gitlab-runner/config.toml
+
+>ไฟล์ binary fleeting-plugin ของ Digital Ocean fleeting-plugin จะถูก compile ไว้ที่ path ```/usr/local/bin```
+![fleeting-plugin-binary-on-vps.png](fleeting-plugin-binary-on-vps.png)
+
+* สร้างไฟล์ config.toml ที่ path /etc/gitlab-runner/config.toml
+หากมีไฟล์อยู่แล้ว replace ทับได้เลย
 ```sh
 # /etc/gitlab-runner/config.toml
 concurrent = 4
@@ -174,42 +163,57 @@ session_timeout = 1800
             scale_factor_limit = 5
 ```
 
-3.4. เปลี่ยน owner และเซต permission ให้ไฟล์ config.toml 
+* เปลี่ยน owner และเซต permission ให้ไฟล์ config.toml 
 ```sh
 sudo chown root:root /etc/gitlab-runner/config.toml
 sudo chmod 600 /etc/gitlab-runner/config.toml
 ```
 
-3.5. start gitlab-runner
+* start gitlab-runner
 ```sh
 sudo systemctl start gitlab-runner
 sudo systemctl enable gitlab-runner
 ```
 
-เช็ค gitlab-runner logs มี status บอกว่า เชื่อมต่อกับ Digital Ocean สำเร็จ และ เช็ค status runner ในหน้า gitlab repository มี status ACTIVE แสดงว่า ทั้งฝั่ง gitlab instance, gitlab runner และ digital ocean พร้อม.
+* เช็คว่า gitlab-runner รันปกติและสามารถเชื่อมต่อกับ Digital Ocean ได้
+```sh
+gitlab-runner status
+sudo journalctl -u gitlab-runner -f
+```
+![verify-runner-is-running](verify-runner-is-running.png)
 
-### Push code รัน Pipeline
-ก่อนอื่น ผมจะสร้าง vps มาอีกหนึ่งตัวเพื่อจำลองเป็นที่ deploy app
+เช็คที่หน้า gitlab repository จะสังเกตได้ว่า ที่ runner มี status ขึ้นเป็น Online
+![gitlab-conncted-with-runner](gitlab-conncted-with-runner.png)
 
-1.1. สร้างไฟล์ Dockerfile
+gitlab พร้อม, runner พร้อม, digital ocean พร้อม
+ที่นี้ runner ของเราก็พร้อมรัน ci/cd jobs แล้ว
+
+### Push code และรัน Pipeline
+เพื่อให้เห็นภาพการทำงานจริง ผมจะลองสร้างแอปพลิเคชันง่ายๆ แล้วให้ Runner ของเราสร้าง Ephemeral VPS ขึ้นมาเพื่อ Build และ Deploy งานไปยังเครื่องปลายทาง (Target Server) ครับ
+
+>เตรียมเครื่องสำหรับ Deploy (Target Server)
+ผมจะสร้าง VPS (Droplet) ขึ้นมาอีกหนึ่งตัวเพื่อทำหน้าที่เป็น Production Server ครับ โดยใช้ Docker เป็นการ Deploy ง่ายๆ
+
+* สร้างไฟล์ Dockerfile<br>
+แอปพลิเคชันที่ผมใช้ทดสอบคือ http-https-echo ซึ่งเป็น Image ที่ใช้สำหรับตรวจสอบ Request ที่ส่งเข้ามาครับ
+
 ```docker
-# Use a robust, well-maintained echo image
 FROM mendhak/http-https-echo:latest
 
-# The image listens on port 8080 by default
 EXPOSE 8080
 ```
 
-1.1. สร้างไฟล์ gitlab-ci.yml
+* สร้างไฟล์ .gitlab-ci.yml
+ในไฟล์นี้เราจะกำหนดให้ Pipeline มี 2 ขั้นตอนหลัก โดยอย่าลืมระบุ Tags ให้ตรงกับที่เราตั้งไว้ใน Runner (เช่น my-project-1) เพื่อให้มันไปเรียกใช้ Docker Autoscaler ครับ
 ```sh
 stages:
   - docker_publish
   - deploy
 
 default:
-  image: docker:20.10.16
+  image: docker:25
   tags:
-    - containerized-multi-host
+    - my-project-1 # ใน่ชื่อ tag ให้ตรงกับที่สร้างไว้ในตอนต้น
 
 docker_publish_image:
   stage: docker_publish
@@ -255,6 +259,27 @@ deploy_to_droplet:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 ```
 
-- เช็ค runner logs บนหน้า gitlab repository
-- access vps deployed app ว่า app ถูก deploy ขึ้นจริงๆ
+* ก่อนที่ จะ push โค๊ดไปที่ repo ผมจะ config ให้ repo มี secrets ต่างๆที่ต้องใช้ตามที่ระบุใน Pipeline ดังนี้นะครับ
+| Key | Description |
+|---|---|
+| TARGET_VPS_PRIVATE_IP | Pubic IP ของเครื่อง Deploy |
+| SSH_PRIVATE_KEY_B64 | ssh private key ของเรา โดยทำการ encode base64 |
+
+![gitlab-repo-variables](gitlab-repo-variables.png)
+
+เมื่อ Push code ขึ้นไปยัง Repository จะสังเกตได้ว่า Runner ของเราขึ้นสถานะทำงาน โดยมีการรัน pipeline เกิดขึ้น เราสามารถเข้าไป monitor logs ได้จาก เมนู Pipeline
+![gitlab-runner-run-job](gitlab-runner-run-job.png)
+
 - เช็ค หน้า Digital Ocean ว่า Ephemical runner ถูก scale down ลง เหลือเท่ากับจำนวน idle
+![digital-ocean-shows-ephemical-runners](digital-ocean-shows-ephemical-runners.png)
+
+- access vps deployed app ว่า app ถูก deploy ขึ้นจริงๆ
+![verify-deploy-app](verify-deploy-app.png)
+
+
+
+
+## Footnote
+[^runner]: runner คือ agent ที่ execute หรือรัน ci/cd jobs ใน pipeline
+[^executor]: executor คือ รูปแบบและเครื่องมือ ที่ใช้ในการรัน ci/cd jobs
+[^ephemical-runner]: ephemical runner คือ runner ย่อย/เล็กๆ ที่ถูกสร้างขึ้นมาชั่วคราวเพื่อรัน job เมื่อรันเสร็จจะถูกลบออกไป
