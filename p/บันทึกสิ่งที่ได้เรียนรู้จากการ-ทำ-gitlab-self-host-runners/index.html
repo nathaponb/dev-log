@@ -1,0 +1,298 @@
+<!doctype html><html lang=en-us dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="บันทึกขั้นตอนและปัญหาที่เจอในการทำ gitlab self-managed runners กับ Digital Ocean"><title>บันทึกสิ่งที่ได้เรียนรู้จากการทำ Gitlab self-managed runners</title><link rel=canonical href=https://devlog.happycodingcow.dev/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/><link rel=stylesheet href=/scss/style.min.6a692fd055deae459f2a9767f57f3855ba80cafd5041317f24f7360f6ca47cdf.css><meta property='og:title' content="บันทึกสิ่งที่ได้เรียนรู้จากการทำ Gitlab self-managed runners"><meta property='og:description' content="บันทึกขั้นตอนและปัญหาที่เจอในการทำ gitlab self-managed runners กับ Digital Ocean"><meta property='og:url' content='https://devlog.happycodingcow.dev/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/'><meta property='og:site_name' content='Nathapon B.'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='gitlab'><meta property='article:tag' content='runner'><meta property='article:tag' content='docker'><meta property='article:published_time' content='2026-03-14T00:00:00+00:00'><meta property='article:modified_time' content='2026-03-14T00:00:00+00:00'><meta property='og:image' content='https://devlog.happycodingcow.dev/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/IMG_20260101_073828.jpg'><meta name=twitter:title content="บันทึกสิ่งที่ได้เรียนรู้จากการทำ Gitlab self-managed runners"><meta name=twitter:description content="บันทึกขั้นตอนและปัญหาที่เจอในการทำ gitlab self-managed runners กับ Digital Ocean"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content='https://devlog.happycodingcow.dev/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/IMG_20260101_073828.jpg'><link rel="shortcut icon" href=/favicon.png></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label="Toggle Menu">
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/me_hu_78cbe15bcc9cb650.jpg width=300 height=300 class=site-logo loading=lazy alt=Avatar></a></figure><div class=site-meta><h1 class=site-name><a href=/>Nathapon B.</a></h1><h2 class=site-description>@nathaponb</h2></div></header><ol class=menu-social><li><a href=https://github.com/nathaponb target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/><svg class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg>
+<span>Home</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>Archives</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>Search</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>Dark Mode</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">Table of contents</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#จดเรมตน>จุดเริ่มต้น</a></li><li><a href=#ปญหา>ปัญหา</a></li><li><a href=#ลงมอทำ>ลงมือทำ</a><ol><li><a href=#เตรยม-gitlab-repository>เตรียม GitLab Repository</a></li><li><a href=#เตรยม-digital-ocean>เตรียม Digital Ocean</a></li><li><a href=#เซต-vps-ใหเปน-runner-manager>เซต VPS ให้เป็น Runner Manager</a></li><li><a href=#เตรยม-source-code-cicd-pipeline-และเรมรน>เตรียม Source Code, CI/CD Pipeline และเริ่มรัน</a></li></ol></li><li><a href=#สรป>สรุป</a></li></ol></nav></div></section></aside><main class="main full-width"><article class="has-image main-article"><header class=article-header><div class=article-image><a href=/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/><img src=/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/IMG_20260101_073828_hu_ddff0d31b5e5aa40.jpg srcset="/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/IMG_20260101_073828_hu_ddff0d31b5e5aa40.jpg 800w, /p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/IMG_20260101_073828_hu_2ecafcdf08c830c2.jpg 1600w" width=800 height=600 loading=lazy alt="Featured image of post บันทึกสิ่งที่ได้เรียนรู้จากการทำ Gitlab self-managed runners"></a></div><div class=article-details><header class=article-category><a href=/categories/devlog/>Devlog</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/>บันทึกสิ่งที่ได้เรียนรู้จากการทำ Gitlab self-managed runners</a></h2><h3 class=article-subtitle>บันทึกขั้นตอนและปัญหาที่เจอในการทำ gitlab self-managed runners กับ Digital Ocean</h3></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published>Mar 14, 2026</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>8 minute read</time></div></footer></div></header><section class=article-content><h1 id=บนทกสงทไดเรยนรจากการทำ-gitlab-self-managed-runners>บันทึกสิ่งที่ได้เรียนรู้จากการทำ Gitlab self-managed runners</h1><h2 id=จดเรมตน>จุดเริ่มต้น</h2><p>ผมเริ่มมองหาวิธีการทำ Self-managed Runners เพราะกำลังอยู่ในช่วงดีไซน์ระบบให้กับ Side Project ตัวหนึ่ง
+และส่วนสำคัญที่ขาดไปไม่ได้เลยใน Infrastructure ก็คือ CI/CD Pipeline ที่จะเข้ามาช่วย Automate งานต่างๆ หลังจากที่โค้ดถูก Push ขึ้นไปบน Repository แล้ว<br>โดยปกติ GitLab เองจะมี Shared Runners มาให้ใช้ (ซึ่งเป็น Runner ตัวฟรี ที่นำ CI/CD pipeline ของหลายๆคนไปรันร่วมกัน) แม้ทาง GitLab จะแยก Environment ให้ก็จริง แต่ในแง่ของความปลอดภัย การที่ Source Code หรือ Logs สำคัญๆ ต้องไปรันอยู่บนที่ที่เราไม่ได้คุมเอง 100% ก็แอบน่ากังวลอยู่เหมือนกันสำหรับโปรเจคที่มีความสำคัญ<br>ดังนั้น ไหนๆก็กำลังดีไซน์ ผมเลยลอง POC ทำ Self-managed Runner เองเลยดีกว่า.</p><p>ในการสร้าง Runner สิ่งที่สำคัญคือ การเลือก Executor ให้เหมาะสมกับ infastructure โปรเจคของเรา โดย Executor อาจเปรียบเสมือนเป็น &lsquo;Driver&rsquo; ที่กำหนดว่างานใน Pipeline ของเราจะถูกรันด้วยวิธีไหน โดย GitLab มี Executor ให้เลือกใช้งานหลากหลายรูปแบบ อาทิ เช่น Docker, Kubernetes, Instance, Docker Autoscaler เป็นต้น</p><ol><li><p><strong>Docker Executor</strong> เป็น Executor ที่นำเอาเทคโนโลยี Container มาใช้ในการรัน CI/CD Jobs<br>ข้อดี: คือการ Setup และการใช้งานนั้นตรงไปตรงมา ไม่ซับซ้อน<br>ข้อเสีย: เนื่องจาก Container จะดึงทรัพยากร (CPU/RAM) มาจากเครื่อง Host โดยตรง ดังนั้นเราจึงจำเป็นต้องเตรียมสเปกเครื่อง Host ให้เพียงพอต่อความต้องการของ Runner<br>หากจัดสรรสเปกไม่ดี หรือรัน Jobs พร้อมกันหลายตัวจนทรัพยากรเครื่อง Host ไม่พอ ก็อาจส่งผลให้ CI/CD Pipeline ล่มหรือทำงานช้าลงได้<br>และแน่นอนว่าการเช่า VPS สเปกสูงๆไว้ เพื่อรองรับโหลดงานหนักๆ ก็ย่อมมีค่าใช้จ่าย ที่สูงตามมาด้วยเช่นกัน เพราะ Cloud Provider ส่วนใหญ่คิดค่าใช้จ่ายเป็นรายชั่วโมง.</p></li><li><p><strong>Kubernetes Executor</strong>: หาก Infrastructure ที่ผมดีไซน์ไว้มีการใช้ Kubernetes เป็น Base อยู่แล้ว ผมคงไม่ลังเลที่จะเลือกใช้ Executor ตัวนี้<br>ข้อดี: คือความสามารถในการใช้ฟีเจอร์ Auto-scale ของ Kubernetes สร้าง Pods มารัน CI/CD Jobs ได้ตามต้องการ<br>ข้อเสีย (ในบริบทของผม): คือความซับซ้อนในการ Setup เพราะผมไม่ได้ดีไซน์ที่จะใช้ Kubernetes Cluster สำหรับโปรเจกต์นี้ตั้งแต่ต้น การต้องมาเซต K8s Cluster เพียงเพื่อรัน Runner อย่างเดียวอาจจะดูเป็นการ &lsquo;ขี่ช้างจับตั๊กแตน&rsquo; เกินไป</p></li><li><p><strong>Instance Executor</strong>: เป็น Executor ที่ใช้วิธีสร้าง Instance (เครื่อง VM, VPS) ขึ้นมาใหม่เป็น Runner ชั่วคราว (Ephemeral Runner) เพื่อใช้รัน CI/CD Job โดยเฉพาะ<br>ข้อดี: เป็นระบบแบบ Auto-scaling ที่ใช้ Fleeting library เพราะเครื่อง runner ชั่วคราว จะถูกสร้างขึ้นมาเมื่อมี CI/CD Job และทำลายทิ้งเมื่อรันเสร็จ วิธีนี้ช่วยควบคุมค่าใช้จ่ายได้ตามการใช้งานจริง ไม่ต้องมีเครื่อง Runner ไว้รอ CI/CD Jobs<br>ข้อเสีย: เนื่องจาก Instance ที่ถูกสร้างขึ้นมามักจะเป็น Bare VPS (เครื่องเปล่า) การจัดการ Environment หรือติดตั้ง Dependency ต่างๆ ให้พร้อมใช้งานตามที่ Pipeline ต้องการนั้น ทำขาดความยืดหยุ่นพอสมควร เนื่องจากเครื่อง Runner จะต้องถูก Config ให้มี Environment ที่สามารถรัน Pipeline ได้ ก่อนเสมอ<br>ยกตัวอย่างเช่น: หากใน Pipeline ของเราต้องการ Library ตัวเดียวกันแต่คนละ Version กัน การ Setup ลงบน OS ของ VPS โดยตรงจะค่อนข้างมีความซับซ้อน</p></li><li><p><strong>Docker Autoscaler Executor</strong>: เป็น Executor ที่นำข้อดีของ Docker และ Instance Executor มาประยุกต์เข้าด้วยกัน โดยใช้ Fleeting Library ในการสร้าง Instance ที่มี Docker ขึ้นมาใหม่เป็น Runner ชั่วคราว (Ephemeral Runner)<br>ข้อดี: คือการ Auto Scale Instance ขึ้นมาตามความต้องการของ CI/CD Jobs และใช้สามารถของ Docker มาใช้แยก Environment และ Dependency ของแต่ละ Job ได้อย่างอิสระ ทำให้เกิดความยืดหยุ่นสูง เพราะหน้าที่การ Setup dependency ของการรัน CI/CD อยู่ที่การเลือก Docker image ที่มี dependency ตามที่ต้องการใน CI/CD Pipeline แทน.<br></p></li></ol><p><a id=fleeting-explain></a></p><blockquote><p>Fleeting คือ Library ที่ทำหน้าที่เป็นตัวกลางระหว่าง GitLab Runner และ Cloud Provider เพื่อจัดการเรื่อง Auto-scaling โดยเฉพาะ<br>โดย Fleeting จะไม่ได้สื่อสารกับ Cloud Provider โดยตรง แต่จะใช้ Fleeting Plugin ซึ่งถูกรันขึ้นมาเป็น Sub-process ย่อยอีกที (หรือจะมองว่าเป็น API Server เล็กๆ ที่รอรับคำสั่งจาก Fleeting ก็ได้)
+<img src=/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/gitlab-fleeting.drawio.svg loading=lazy alt="gitlab fleeting"></p></blockquote><p>เมื่อเปรียบเทียบข้อดีและข้อเสียของแต่ละ Executor แล้ว ดูเหมือน Docker Autoscaler จะเป็นตัวเลือกที่ดีที่สุดสำหรับโปรเจคนี้ของผม.</p><h2 id=ปญหา>ปัญหา</h2><p>หลังจากที่ผมตัดสินใจได้ว่า Docker Autoscaler Executor คือตัวเลือกที่ลงตัวที่สุด แต่เมื่อเริ่มลงลึกในรายละเอียดการติดตั้ง ผมกลับเจออุปสรรคสำคัญเข้าจนได้<br>เพราะใน GitLab มี Fleeting Plugin รองรับให้เฉพาะ Cloud Provider เจ้าใหญ่ๆเท่านั้น เช่น AWS, Azure และ Google Cloud แต่สำหรับ Digital Ocean ที่เป็น Cloud Provider ระดับกลางๆและเป็น Cloud Provider ที่ผมเลือกใช้ เหมือนจะไม่มี Fleeting Plugin มาให้<br>ในขณะที่ผมกำลังลังเลว่าจะยอมเปลี่ยนไปใช้ AWS หรือ Google Cloud เพื่อให้สามารถ Setup ง่ายๆได้ตาม document หรือไม่<br>ผมก็ลองหาข้อมูลและทำความเข้าใจกับ Fleeting Library ไปด้วย แล้วก็พบว่า จริงๆ Gitlab มีเหตุผลที่ไม่ได้มี Fleeting Plugin มาคอย support ให้กับ Cloud Provider ทุกเจ้า เพราะก่อนหน้านี้ Gitlab เลือกใช้ <a class=link href=https://github.com/docker-archive-public/docker.machine target=_blank rel=noopener>Docker machine</a> เป็นวิธีในการทำ Auto Scaling ให้กับ Runners<br>แต่เนื่องด้วยโปรเจค Docker Machine หยุดการพัฒนาไปและไม่มีการดูแลต่อ ทำให้ Gitlab ต้องมองหา solution ใหม่เข้ามาแทน จนเกิดเป็น Fleeting Library โดย Gitlab อะธิบายไว้อย่างละเอียดใน <a class=link href=https://handbook.gitlab.com/handbook/engineering/architecture/design-documents/runner_scaling/ target=_blank rel=noopener>&lsquo;Next Runner Auto-scaling Architecture&rsquo;</a><br>หลักการทำงานคร่าวๆของ Fleeting คือ การเป็น Interface ให้กับ Runner manager นั่นเอง
+ยกตัวอย่างเช่น Runner manager เองไม่จำเป็นต้องรู้เลยว่าเราใช้ Cloud ของเจ้าไหนอยู่ แค่สั่งผ่าน Fleeting ว่าขอ Instance 3 ตัว มาเป็น Runner ย่อย (Ephemical runners) Fleeting จะเรียกใช้งานฟังค์ชั่น Increase(3) Cloud provider ต้องสร้าง Instance group มาให้ 3 ตัวพร้อมกับ IP Address แค่นั้นพอ.
+นี่จึงทำให้ Fleeting มีความยืดหยุ่นค่อนข้างสูง.<br>ดังนั้นการสร้าง Fleeting plugin ของ Digital Ocean จึงเป็น task ของฝั่ง Digital Ocean (Users) มากกว่าที่ต้องเขียน Plugin มา implement Interface ของ Fleeting<br>แต่ก่อนที่ผมจะลงมือหา Document เขียน Fleeting plugin ของ Digital Ocean โชคดีที่ไปเจอว่า มีคนเขียนไว้ก่อนหน้าแล้ว <a class=link href=https://gitlab.com/bearx3f/fleeting-plugin-digitalocean target=_blank rel=noopener>DigitalOcean Fleeting Plugin</a>.</p><h2 id=ลงมอทำ>ลงมือทำ</h2><p>เมื่อหาข้อมูลพอสมควรแล้ว ทีนี้ก็เหลือแค่ลงมือทำ
+โดยผมจะใช้</p><ul><li><strong>Digital Ocean</strong> เป็น Cloud Provider</li><li><strong>Gitlab</strong> เป็น Source code Repository</li><li><strong>Docker Autoscaler</strong> เป็น Executor ของ Runner</li></ul><p>ขั้นตอนการ Setup มีประมาณนี้</p><ul><li>เตรียม Gitlab Repository และ generate runner token ให้พร้อม.</li><li>เตรียม Digital Ocean โดยสร้าง token สำหรับให้ Gitlab runner ใช้ในการติดต่อเพื่อทำ Auto scale.</li><li>สร้าง VPS มาหนึ่งตัวเพื่อเป็น Runner manager ในการติดต่อกับ Gitlab Repository และติดต่อกับ Digital Ocean เพื่อสร้าง runners ชั่วคราว (Ephemical runners) มารัน CI/CD Jobs.</li><li>Push โค๊ด เพื่อรัน CI/CD pipeline.</li></ul><h3 id=เตรยม-gitlab-repository>เตรียม GitLab Repository</h3><ul><li><strong>สร้าง Repository</strong>: เริ่มต้นด้วยการสร้างโปรเจกต์สำหรับเก็บ Source Code และ CI/CD Pipeline ให้เรียบร้อย</li><li><strong>สร้าง Runner</strong>: ไปที่เมนู Settings 👉 CI/CD 👉 Runners, กดปุ่ม New project runner 👉 กำหนด Tag ให้กับ Runner เพื่อให้สามารถระบุในไฟล์ .gitlab-ci.yml ได้ว่า Job ไหนจะให้ Runner ตัวนี้เป็นคนรัน (เช่น my-project-1)<br><strong>สำคัญ!</strong> เก็บ Token หลังจากกด Create runner ให้คัดลอกและเก็บ Token ไว้ (เพราะ GitLab จะแสดงให้เห็นแค่ครั้งเดียว) token จำเป็นต้องใช้ในขั้นตอนการเชื่อม Runner Manager กลับมาที่ Gitlab Repository
+<img src=/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/gitlab-create-project-runner.png width=2914 height=1720 srcset="/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/gitlab-create-project-runner_hu_e8d2303e90d0a97d.png 480w, /p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/gitlab-create-project-runner_hu_126b1cf9cf07594a.png 1024w" loading=lazy alt=create-project-runner class=gallery-image data-flex-grow=169 data-flex-basis=406px></li></ul><h3 id=เตรยม-digital-ocean>เตรียม Digital Ocean</h3><ul><li><strong>สร้าง Digital Ocean API token</strong> (แบบ Read/Write) เพื่อให้ Runner Manager ใช้ติดต่อกับ DigitalOcean ในการสร้างและลบ Ephemeral Runners อัตโนมัติ (Auto Scaling)<br><img src=/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/do-gen-token.png width=2912 height=1538 srcset="/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/do-gen-token_hu_b9d3c95f2bf1af67.png 480w, /p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/do-gen-token_hu_3284c8a3194de982.png 1024w" loading=lazy class=gallery-image data-flex-grow=189 data-flex-basis=454px></li><li><strong>สร้าง VPS สำหรับใช้เป็น Runner Manager</strong>: แม้ตัว Runner Manager จะไม่ได้รัน Job เอง แต่ต้องคอยจัดการคิวการทำงานของ Ephemical Runners
+ในการ POC ครั้งนี้ผมเลือกใช้ spec ที่ต่ำที่สุด แต่ในการทำงานจริง แนะนำ spec ขั้นต่ำที่ <strong>1GB RAM (s-1vcpu-1gb)</strong><div class=table-wrapper><table><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody><tr><td>Region</td><td>Singapore (sgp1)</td></tr><tr><td>Size</td><td>$4/month (s-1vcpu-1gb)</td></tr><tr><td>OS</td><td>Ubuntu (ubuntu-24-04-x64)</td></tr></tbody></table></div></li></ul><h3 id=เซต-vps-ใหเปน-runner-manager>เซต VPS ให้เป็น Runner Manager</h3><p>ssh เข้าไปใน VPS.</p><ul><li><p><strong>ติดตั้ง Docker</strong> : สามารถทำตามขั้นตอนใน Official Document ได้เลย <a class=link href=https://docs.docker.com/engine/install/ubuntu/ target=_blank rel=noopener>https://docs.docker.com/engine/install/ubuntu/</a><br></p></li><li><p><strong>ติดตั้ง GitLab Runner</strong></p></li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sh data-lang=sh><span class=line><span class=cl><span class=c1># Download the binary for your system (amd64)</span>
+</span></span><span class=line><span class=cl>sudo curl -L --output /usr/local/bin/gitlab-runner https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-linux-amd64
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Give it permission to execute</span>
+</span></span><span class=line><span class=cl>sudo chmod +x /usr/local/bin/gitlab-runner
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create a GitLab Runner user</span>
+</span></span><span class=line><span class=cl>sudo useradd --comment <span class=s1>&#39;GitLab Runner&#39;</span> --create-home gitlab-runner --shell /bin/bash
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Install and run as a service</span>
+</span></span><span class=line><span class=cl>sudo gitlab-runner install --user<span class=o>=</span>gitlab-runner --working-directory<span class=o>=</span>/home/gitlab-runner
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>sudo gitlab-runner start
+</span></span></code></pre></td></tr></table></div></div><ul><li><strong>Compile ไฟล์ Fleeting Plugin Binary</strong> : ต่อมา จำเป็นต้องมี ไฟล์ binary fleeting-plugin ของ digital ocean เนื่องจากที่ได้อธิบายไปในตอนต้นแล้วว่า gitlab runner ไม่ได้มี official fleeting plugin สำหรับ Digital Ocean มาให้ ดังนั้นจึงจำเป็นต้อง compile เองจาก Source Code ของโปรเจค <a class=link href=https://gitlab.com/bearx3f/fleeting-plugin-digitalocean target=_blank rel=noopener>DigitalOcean Fleeting Plugin</a><br></li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sh data-lang=sh><span class=line><span class=cl><span class=nb>export</span> <span class=nv>PACKAGE_REGISTRY_URL</span><span class=o>=</span><span class=s2>&#34;https://gitlab.com/api/v4/projects/75321582/packages/generic/fleeting-plugin-digitalocean&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># รัน script install, หากติดปัญหา สามารถใช้วิธี manual clone repo และ compile source code สามารถดูรายละเอียดใน readme.md</span>
+</span></span><span class=line><span class=cl>curl -sSL https://gitlab.com/bearx3f/fleeting-plugin-digitalocean/-/raw/main/install.sh <span class=p>|</span> bash
+</span></span></code></pre></td></tr></table></div></div><p>เมื่อแล้วเสร็จ ไฟล์ binary fleeting-plugin ของ Digital Ocean จะถูก compile ไว้ที่ path <code>/usr/local/bin</code>
+<img src=/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/fleeting-plugin-binary-on-vps.png width=1896 height=278 srcset="/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/fleeting-plugin-binary-on-vps_hu_3f2db2c416e4124a.png 480w, /p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/fleeting-plugin-binary-on-vps_hu_6171722399397b7c.png 1024w" loading=lazy alt=fleeting-plugin-binary-on-vps.png class=gallery-image data-flex-grow=682 data-flex-basis=1636px></p><ul><li><strong>Config Runner Manager</strong> : โดยสร้างไฟล์ <code>config.toml</code> ที่ path <code>/etc/gitlab-runner/config.toml</code>
+หากมีไฟล์อยู่แล้ว replace ทับไฟล์เดิมได้เลย, ใส่ token ทั้งจาก Gitlab Repository และ Digital Ocean ตามที่ได้เตรียมไว้ในขั้นตอนแรกลงไปในไฟล์.</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sh data-lang=sh><span class=line><span class=cl><span class=c1># /etc/gitlab-runner/config.toml</span>
+</span></span><span class=line><span class=cl><span class=nv>concurrent</span> <span class=o>=</span> <span class=m>4</span>
+</span></span><span class=line><span class=cl><span class=nv>check_interval</span> <span class=o>=</span> <span class=m>3</span>
+</span></span><span class=line><span class=cl><span class=nv>connection_max_age</span> <span class=o>=</span> <span class=s2>&#34;15m0s&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>shutdown_timeout</span> <span class=o>=</span> <span class=m>0</span>
+</span></span><span class=line><span class=cl><span class=o>[</span>session_server<span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=nv>session_timeout</span> <span class=o>=</span> <span class=m>1800</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=o>[[</span>runners<span class=o>]]</span>
+</span></span><span class=line><span class=cl>        <span class=nv>name</span> <span class=o>=</span> <span class=s2>&#34;DigitalOcean-Autoscaler-Runner&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=nv>limit</span> <span class=o>=</span> <span class=m>10</span>
+</span></span><span class=line><span class=cl>        <span class=nv>url</span> <span class=o>=</span> <span class=s2>&#34;https://gitlab.com&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=nv>token</span> <span class=o>=</span> <span class=s2>&#34;TOKEN-FROM-GITLAB&#34;</span> <span class=c1># 👈ใส่ token ที่ generate จาก Gitlab repository</span>
+</span></span><span class=line><span class=cl>        <span class=nv>executor</span> <span class=o>=</span> <span class=s2>&#34;docker-autoscaler&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=nv>shell</span> <span class=o>=</span> <span class=s2>&#34;sh&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=o>[</span>runners.docker<span class=o>]</span>
+</span></span><span class=line><span class=cl>            <span class=nv>tls_verify</span> <span class=o>=</span> <span class=nb>false</span>
+</span></span><span class=line><span class=cl>            <span class=nv>image</span> <span class=o>=</span> <span class=s2>&#34;busybox:latest&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=nv>pull_policy</span> <span class=o>=</span> <span class=s2>&#34;if-not-present&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=nv>privileged</span> <span class=o>=</span> <span class=nb>true</span>
+</span></span><span class=line><span class=cl>            <span class=nv>disable_entrypoint_overwrite</span> <span class=o>=</span> <span class=nb>false</span>
+</span></span><span class=line><span class=cl>            <span class=nv>oom_kill_disable</span> <span class=o>=</span> <span class=nb>false</span>
+</span></span><span class=line><span class=cl>            <span class=nv>disable_cache</span> <span class=o>=</span> <span class=nb>false</span>
+</span></span><span class=line><span class=cl>            <span class=nv>shm_size</span> <span class=o>=</span> <span class=m>0</span>
+</span></span><span class=line><span class=cl>            <span class=nv>network_mtu</span> <span class=o>=</span> <span class=m>0</span>
+</span></span><span class=line><span class=cl>            <span class=nv>network_mode</span> <span class=o>=</span> <span class=s2>&#34;host&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=nv>volumes</span> <span class=o>=</span> <span class=o>[</span><span class=s2>&#34;/var/run/docker.sock:/var/run/docker.sock&#34;</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>        <span class=o>[</span>runners.autoscaler<span class=o>]</span>
+</span></span><span class=line><span class=cl>            <span class=nv>plugin</span> <span class=o>=</span> <span class=s2>&#34;/usr/local/bin/fleeting-plugin-digitalocean&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>            <span class=nv>capacity_per_instance</span> <span class=o>=</span> <span class=m>2</span>
+</span></span><span class=line><span class=cl>            <span class=nv>max_use_count</span> <span class=o>=</span> <span class=m>10</span>
+</span></span><span class=line><span class=cl>            <span class=nv>max_instances</span> <span class=o>=</span> <span class=m>10</span>
+</span></span><span class=line><span class=cl>        <span class=o>[</span>runners.autoscaler.plugin_config<span class=o>]</span>
+</span></span><span class=line><span class=cl>            <span class=nv>access_token</span> <span class=o>=</span> <span class=s2>&#34;DIGITAL-OCEAN-TOKEN&#34;</span> <span class=c1># 👈ใส่ token ที่ generate จาก Digital Ocean</span>
+</span></span><span class=line><span class=cl>            <span class=nv>image</span> <span class=o>=</span> <span class=s2>&#34;docker-20-04&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=nv>instance_slug</span> <span class=o>=</span> <span class=s2>&#34;s-1vcpu-1gb&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=nv>name</span> <span class=o>=</span> <span class=s2>&#34;ephemeral-runner&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=nv>region_slug</span> <span class=o>=</span> <span class=s2>&#34;sgp1&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=nv>ssh_private_key_file</span> <span class=o>=</span> <span class=s2>&#34;/cache/id_rsa&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=nv>tag</span> <span class=o>=</span> <span class=s2>&#34;ci-runners&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=o>[</span>runners.autoscaler.connector_config<span class=o>]</span>
+</span></span><span class=line><span class=cl>            <span class=nv>protocol</span> <span class=o>=</span> <span class=s2>&#34;ssh&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=nv>username</span> <span class=o>=</span> <span class=s2>&#34;root&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=nv>keepalive</span> <span class=o>=</span> <span class=s2>&#34;10s&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=nv>timeout</span> <span class=o>=</span> <span class=s2>&#34;10s&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=nv>use_external_addr</span> <span class=o>=</span> <span class=nb>false</span>
+</span></span><span class=line><span class=cl>        <span class=o>[[</span>runners.autoscaler.policy<span class=o>]]</span>
+</span></span><span class=line><span class=cl>            <span class=nv>idle_count</span> <span class=o>=</span> <span class=m>0</span> <span class=c1># จำนวน ephemcal runner ที่เราสามารถคงไว้เป็น idle state สำหรับรัน CI/CD Job ได้ทันที</span>
+</span></span><span class=line><span class=cl>            <span class=nv>scale_factor</span> <span class=o>=</span> 1.0
+</span></span><span class=line><span class=cl>            <span class=nv>idle_time</span> <span class=o>=</span> <span class=s2>&#34;5m0s&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=nv>scale_factor_limit</span> <span class=o>=</span> <span class=m>5</span>
+</span></span></code></pre></td></tr></table></div></div><ul><li>เปลี่ยน owner และเซต permission ให้กับไฟล์ <code>config.toml</code></li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sh data-lang=sh><span class=line><span class=cl>sudo chown root:root /etc/gitlab-runner/config.toml
+</span></span><span class=line><span class=cl>sudo chmod <span class=m>600</span> /etc/gitlab-runner/config.toml
+</span></span></code></pre></td></tr></table></div></div><ul><li>เริ่มรัน gitlab-runner</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sh data-lang=sh><span class=line><span class=cl>sudo systemctl start gitlab-runner
+</span></span><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> gitlab-runner
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># เช็คว่า gitlab-runner รันปกติและสามารถเชื่อมต่อกับ Digital Ocean ได้สำเร็จ</span>
+</span></span><span class=line><span class=cl>gitlab-runner status
+</span></span><span class=line><span class=cl>sudo journalctl -u gitlab-runner -f
+</span></span></code></pre></td></tr></table></div></div><p>หากการเชื่อมต่อกับ Digital Ocean สำเร็จจะมี logs บอกสถานะการเชื่อมต่อขึ้นดังภาพ
+<img src=/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/verify-runner-is-running.png width=3024 height=668 srcset="/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/verify-runner-is-running_hu_48abaf3eb2233555.png 480w, /p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/verify-runner-is-running_hu_f6d3fd8e8caa5ebe.png 1024w" loading=lazy alt=verify-runner-is-running class=gallery-image data-flex-grow=452 data-flex-basis=1086px></p><p>เช็คที่หน้า gitlab repository จะสังเกตว่า ที่ runner มี status ขึ้นเป็น Online
+<img src=/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/gitlab-conncted-with-runner.png width=2908 height=1716 srcset="/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/gitlab-conncted-with-runner_hu_6a98fada7c0b152e.png 480w, /p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/gitlab-conncted-with-runner_hu_a371191fb2cb9a3f.png 1024w" loading=lazy alt=gitlab-conncted-with-runner class=gallery-image data-flex-grow=169 data-flex-basis=406px></p><p>หาก gitlab-runner (Runner Manager) รันได้ปกติ และสามารถเชื่อมต่อทั้ง 2 ฝั่งได้ เท่านี้ runner ก็พร้อมรับโหลด CI/CD Jobs มารันแล้ว.</p><h3 id=เตรยม-source-code-cicd-pipeline-และเรมรน>เตรียม Source Code, CI/CD Pipeline และเริ่มรัน</h3><p>เพื่อให้ครบ flow การทำงานทั้ง CI และ CD ผมจะสร้าง VPS อีกหนึ่งเครื่องเพื่อให้ runner เข้าไป deploy app
+โดยใช้ Docker เป็น engine ครับ โดยสร้าง VPS แล้ว Access เข้าไป ติดตั้ง Docker.</p><p>ต่อมา ผมจะเตรียม CI/CD pipeline ที่เครื่อง Local เพื่อ push ไปยัง Gitlab Repository ที่เตรียมไว้</p><ul><li>สร้างไฟล์ <code>Dockerfile</code><br>docker image ที่ผมเลือกใช้คือ http-https-echo ซึ่งเป็น Image ที่ใช้สำหรับตรวจสอบ Request ที่ส่งเข้ามา และ ตอบกลับด้วย ข้อมูลของ request นั้น</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-docker data-lang=docker><span class=line><span class=cl><span class=k>FROM</span><span class=w> </span><span class=s>mendhak/http-https-echo:latest</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=k>EXPOSE</span><span class=w> </span><span class=s>8080</span><span class=err>
+</span></span></span></code></pre></td></tr></table></div></div><ul><li>สร้างไฟล์ <code>.gitlab-ci.yml</code>
+ในไฟล์นี้เราจะกำหนดให้ Pipeline มี 2 ขั้นตอนหลัก โดยอย่าลืมระบุ Tags ให้ตรงกับที่เราตั้งไว้ใน Runner (เช่นของผมกำหนด tag ด้วยชื่อ my-project-1)</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sh data-lang=sh><span class=line><span class=cl>stages:
+</span></span><span class=line><span class=cl>  - docker_publish
+</span></span><span class=line><span class=cl>  - deploy
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>default:
+</span></span><span class=line><span class=cl>  image: docker:25
+</span></span><span class=line><span class=cl>  tags:
+</span></span><span class=line><span class=cl>    - my-project-1 <span class=c1># ใส่ชื่อ tag ให้ตรงกับที่สร้างไว้ในตอนต้น</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># build image และ push ไปที่ GitLab Container Registry</span>
+</span></span><span class=line><span class=cl>docker_publish_image:
+</span></span><span class=line><span class=cl>  stage: docker_publish
+</span></span><span class=line><span class=cl>  script:
+</span></span><span class=line><span class=cl>    - <span class=nb>echo</span> <span class=s2>&#34;--- Logging into GitLab Container Registry ---&#34;</span>
+</span></span><span class=line><span class=cl>    - docker login -u <span class=nv>$CI_REGISTRY_USER</span> -p <span class=nv>$CI_REGISTRY_PASSWORD</span> <span class=nv>$CI_REGISTRY</span>
+</span></span><span class=line><span class=cl>    - <span class=nv>IMAGE_TAG</span><span class=o>=</span><span class=nv>$CI_REGISTRY_IMAGE</span>:<span class=nv>$CI_COMMIT_SHORT_SHA</span>
+</span></span><span class=line><span class=cl>    - docker build -t <span class=nv>$IMAGE_TAG</span> .
+</span></span><span class=line><span class=cl>    - docker push <span class=nv>$IMAGE_TAG</span>
+</span></span><span class=line><span class=cl>  rules:
+</span></span><span class=line><span class=cl>    - <span class=k>if</span>: <span class=nv>$CI_COMMIT_BRANCH</span> <span class=o>==</span> <span class=nv>$CI_DEFAULT_BRANCH</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>deploy_to_droplet:
+</span></span><span class=line><span class=cl>  stage: deploy
+</span></span><span class=line><span class=cl>  image: alpine:latest
+</span></span><span class=line><span class=cl>  script:
+</span></span><span class=line><span class=cl>    - <span class=nb>echo</span> <span class=s2>&#34;--- Setting up SSH Access ---&#34;</span>
+</span></span><span class=line><span class=cl>    - apk add --no-cache openssh-client coreutils
+</span></span><span class=line><span class=cl>    - mkdir -p ~/.ssh
+</span></span><span class=line><span class=cl>    <span class=c1># Using printf and -di to ensure the key is decoded perfectly</span>
+</span></span><span class=line><span class=cl>    - <span class=nb>printf</span> <span class=s1>&#39;%s&#39;</span> <span class=s2>&#34;</span><span class=nv>$SSH_PRIVATE_KEY_B64</span><span class=s2>&#34;</span> <span class=p>|</span> base64 -di &gt; ~/.ssh/id_rsa
+</span></span><span class=line><span class=cl>    - chmod <span class=m>600</span> ~/.ssh/id_rsa
+</span></span><span class=line><span class=cl>    - <span class=nb>eval</span> <span class=s2>&#34;</span><span class=k>$(</span>ssh-agent -s<span class=k>)</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>    - ssh-add ~/.ssh/id_rsa
+</span></span><span class=line><span class=cl>    - ssh-keyscan -H <span class=nv>$TARGET_VPS_PRIVATE_IP</span> &gt;&gt; ~/.ssh/known_hosts
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    - <span class=nb>echo</span> <span class=s2>&#34;--- Deploying mendhak/http-https-echo to VPS (</span><span class=nv>$TARGET_VPS_PRIVATE_IP</span><span class=s2>) ---&#34;</span>
+</span></span><span class=line><span class=cl>    - &gt;
+</span></span><span class=line><span class=cl>      ssh root@<span class=nv>$TARGET_VPS_PRIVATE_IP</span> <span class=s2>&#34;
+</span></span></span><span class=line><span class=cl><span class=s2>        docker login -u </span><span class=si>${</span><span class=nv>CI_REGISTRY_USER</span><span class=si>}</span><span class=s2> -p </span><span class=si>${</span><span class=nv>CI_REGISTRY_PASSWORD</span><span class=si>}</span><span class=s2> </span><span class=si>${</span><span class=nv>CI_REGISTRY</span><span class=si>}</span><span class=s2> &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=s2>        docker pull </span><span class=si>${</span><span class=nv>CI_REGISTRY_IMAGE</span><span class=si>}</span><span class=s2>:</span><span class=si>${</span><span class=nv>CI_COMMIT_SHORT_SHA</span><span class=si>}</span><span class=s2> &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=s2>        docker stop my-echo-app || true &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=s2>        docker rm my-echo-app || true &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=s2>        # Note: Port 8081 on VPS -&gt; Port 8080 inside the container
+</span></span></span><span class=line><span class=cl><span class=s2>        docker run -d --name my-echo-app \
+</span></span></span><span class=line><span class=cl><span class=s2>          -p 8081:8080 \
+</span></span></span><span class=line><span class=cl><span class=s2>          --restart unless-stopped \
+</span></span></span><span class=line><span class=cl><span class=s2>          </span><span class=si>${</span><span class=nv>CI_REGISTRY_IMAGE</span><span class=si>}</span><span class=s2>:</span><span class=si>${</span><span class=nv>CI_COMMIT_SHORT_SHA</span><span class=si>}</span><span class=s2>
+</span></span></span><span class=line><span class=cl><span class=s2>      &#34;</span>
+</span></span><span class=line><span class=cl>  dependencies:
+</span></span><span class=line><span class=cl>    - docker_publish_image
+</span></span><span class=line><span class=cl>  rules:
+</span></span><span class=line><span class=cl>    - <span class=k>if</span>: <span class=nv>$CI_COMMIT_BRANCH</span> <span class=o>==</span> <span class=nv>$CI_DEFAULT_BRANCH</span>
+</span></span></code></pre></td></tr></table></div></div><ul><li>ก่อนที่ จะ push โค๊ดไปที่ repo ผมจะ config ให้ repo มี secrets ต่างๆที่ต้องใช้ตามที่ระบุใน Pipeline โดยเข้าไปที่เมนู CI/CD > Variables<div class=table-wrapper><table><thead><tr><th>Key</th><th>Description</th></tr></thead><tbody><tr><td>TARGET_VPS_PRIVATE_IP</td><td>Pubic IP ของเครื่อง Deploy</td></tr><tr><td>SSH_PRIVATE_KEY_B64</td><td>ssh private key (encode base64)</td></tr></tbody></table></div></li></ul><p>เมื่อ Push code ขึ้นไปยัง Repository จะสังเกตได้ว่า Runner ของเราขึ้นสถานะทำงาน โดยมีการรัน pipeline เกิดขึ้น เราสามารถเข้าไป monitor logs ได้จาก เมนู Pipeline
+<img src=/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/gitlab-runner-run-job.png width=2916 height=1722 srcset="/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/gitlab-runner-run-job_hu_36067472bbb08436.png 480w, /p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/gitlab-runner-run-job_hu_cb6f3463c2ca130b.png 1024w" loading=lazy alt=gitlab-runner-run-job class=gallery-image data-flex-grow=169 data-flex-basis=406px></p><p>สุดท้าย ผมลอง access vps deployed app ว่า app ถูก deploy ขึ้นจริงๆ โดยใช้ ip ของ เครื่อง vps
+<img src=/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/verify-deploy-app.png width=1900 height=934 srcset="/p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/verify-deploy-app_hu_5811cacbbc2d1244.png 480w, /p/%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%84%E0%B8%94%E0%B9%89%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%A3%E0%B8%B9%E0%B9%89%E0%B8%88%E0%B8%B2%E0%B8%81%E0%B8%81%E0%B8%B2%E0%B8%A3-%E0%B8%97%E0%B8%B3-gitlab-self-host-runners/verify-deploy-app_hu_50ad2a07c1baaee9.png 1024w" loading=lazy alt=verify-deploy-app class=gallery-image data-flex-grow=203 data-flex-basis=488px></p><h2 id=สรป>สรุป</h2><p>ผมได้เรียนรู้และเข้าใจ การทำงานของ Runner ในหลายมิติ ตั้งแต่ความเข้าในการทำงานเบื้องต้นของ runner, การทำงานภายในของ runner และความเป็นมาของ library ที่สำคัญของ Gitlab runner นั้นก็คือ fleeting.</p></section><footer class=article-footer><section class=article-tags><a href=/tags/gitlab/>Gitlab</a>
+<a href=/tags/runner/>Runner</a>
+<a href=/tags/docker/>Docker</a></section><section class=article-copyright><svg class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><path d="M14.5 9a3.5 4 0 100 6"/></svg>
+<span>Licensed under CC BY-NC-SA 4.0</span></section></footer></article><aside class=related-content--wrapper><h2 class=section-title>Related content</h2><div class=related-content><div class="flex article-list--tile"><article class=has-image><a href=/p/%E0%B9%80%E0%B8%97%E0%B8%B5%E0%B8%A2%E0%B8%9A%E0%B8%9B%E0%B8%A3%E0%B8%B0%E0%B8%AA%E0%B8%B4%E0%B8%97%E0%B8%98%E0%B8%B4%E0%B8%A0%E0%B8%B2%E0%B8%9E%E0%B8%82%E0%B8%AD%E0%B8%87-slice-%E0%B9%81%E0%B8%9A%E0%B8%9A-%E0%B8%81%E0%B8%B3%E0%B8%AB%E0%B8%99%E0%B8%94%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%81%E0%B8%B3%E0%B8%AB%E0%B8%99%E0%B8%94%E0%B8%84%E0%B8%A7%E0%B8%B2%E0%B8%A1%E0%B8%88%E0%B8%B8-capacity/><div class=article-image><img src=/p/%E0%B9%80%E0%B8%97%E0%B8%B5%E0%B8%A2%E0%B8%9A%E0%B8%9B%E0%B8%A3%E0%B8%B0%E0%B8%AA%E0%B8%B4%E0%B8%97%E0%B8%98%E0%B8%B4%E0%B8%A0%E0%B8%B2%E0%B8%9E%E0%B8%82%E0%B8%AD%E0%B8%87-slice-%E0%B9%81%E0%B8%9A%E0%B8%9A-%E0%B8%81%E0%B8%B3%E0%B8%AB%E0%B8%99%E0%B8%94%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%81%E0%B8%B3%E0%B8%AB%E0%B8%99%E0%B8%94%E0%B8%84%E0%B8%A7%E0%B8%B2%E0%B8%A1%E0%B8%88%E0%B8%B8-capacity/IMG_20251101_083648.c48db09ef0c41dab1acca48287de960d_hu_d693025798775d30.jpg width=250 height=150 loading=lazy alt="Featured image of post เทียบประสิทธิภาพของ slice แบบ กำหนดและไม่กำหนดความจุ (Capacity)" data-key=เทียบประสิทธิภาพของ-slice-แบบ-กำหนดและไม่กำหนดความจุ-capacity data-hash="md5-xI2wnvDEHasazKSCh96WDQ=="></div><div class=article-details><h2 class=article-title>เทียบประสิทธิภาพของ slice แบบ กำหนดและไม่กำหนดความจุ (Capacity)</h2></div></a></article></div></div></aside><footer class=site-footer><section class=copyright>&copy;
+2020 -
+2026 Nathapon B.</section><section class=powerby>Built with <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a><br>Theme <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.30.0>Stack</a></b> designed by <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a></section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.1e9a3bafd846ced4c345d084b355fb8c7bae75701c338f8a1f8a82c780137826.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>
