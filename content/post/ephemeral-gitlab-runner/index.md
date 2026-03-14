@@ -1,21 +1,21 @@
 ---
 title: บันทึกสิ่งที่ได้เรียนรู้จากการทำ Gitlab self-managed runners
-draft: true
+draft: false
 description: "บันทึกขั้นตอนและปัญหาที่เจอในการทำ gitlab self-managed runners กับ Digital Ocean"
 slug: บันทึกสิ่งที่ได้เรียนรู้จากการ-ทำ-gitlab-self-host-runners
-date: 2026-02-22 00:00:00+0000
+date: 2026-03-14 00:00:00+0000
 image: IMG_20260101_073828.jpg
 categories:
     - devlog
 tags: ["gitlab", "runner", "docker"]
-weight: 1       # You can add weight to some posts to override the default sorting (date descending)
+weight: 1
 ---
 
 # บันทึกสิ่งที่ได้เรียนรู้จากการทำ Gitlab self-managed runners
 
 ## จุดเริ่มต้น
 ผมเริ่มมองหาวิธีการทำ Self-managed Runners เพราะกำลังอยู่ในช่วงดีไซน์ระบบให้กับ Side Project ตัวหนึ่ง 
-และส่วนสำคัญที่ขาดไม่ได้เลยใน Infrastructure ก็คือการทำ CI/CD Pipeline ที่จะเข้ามาช่วย Automate งานต่างๆ หลังจากที่โค้ดถูก Push ขึ้นไปบน Repository แล้ว<br>
+และส่วนสำคัญที่ขาดไปไม่ได้เลยใน Infrastructure ก็คือ CI/CD Pipeline ที่จะเข้ามาช่วย Automate งานต่างๆ หลังจากที่โค้ดถูก Push ขึ้นไปบน Repository แล้ว<br>
 โดยปกติ GitLab เองจะมี Shared Runners มาให้ใช้ (ซึ่งเป็น Runner ตัวฟรี ที่นำ CI/CD pipeline ของหลายๆคนไปรันร่วมกัน) แม้ทาง GitLab จะแยก Environment ให้ก็จริง แต่ในแง่ของความปลอดภัย การที่ Source Code หรือ Logs สำคัญๆ ต้องไปรันอยู่บนที่ที่เราไม่ได้คุมเอง 100% ก็แอบน่ากังวลอยู่เหมือนกันสำหรับโปรเจคที่มีความสำคัญ<br>
 ดังนั้น ไหนๆก็กำลังดีไซน์ ผมเลยลอง POC ทำ Self-managed Runner เองเลยดีกว่า.
 
@@ -28,7 +28,7 @@ weight: 1       # You can add weight to some posts to override the default sorti
 
 2. **Kubernetes Executor**: หาก Infrastructure ที่ผมดีไซน์ไว้มีการใช้ Kubernetes เป็น Base อยู่แล้ว ผมคงไม่ลังเลที่จะเลือกใช้ Executor ตัวนี้<br>
 ข้อดี: คือความสามารถในการใช้ฟีเจอร์ Auto-scale ของ Kubernetes สร้าง Pods มารัน CI/CD Jobs ได้ตามต้องการ<br>
-ข้อเสีย (ในบริบทของผม): คือความซับซ้อนในการ Setup เพราะผมไม่ได้ดีไซน์ที่จะใช้ Kubernetes Cluster สำหรับโปรเจกต์นี้ตั้งแต่ต้น การต้องมาเซต Cluster เพียงเพื่อรัน Runner อย่างเดียวอาจจะดูเป็นการ 'ขี่ช้างจับตั๊กแตน' เกินไป
+ข้อเสีย (ในบริบทของผม): คือความซับซ้อนในการ Setup เพราะผมไม่ได้ดีไซน์ที่จะใช้ Kubernetes Cluster สำหรับโปรเจกต์นี้ตั้งแต่ต้น การต้องมาเซต K8s Cluster เพียงเพื่อรัน Runner อย่างเดียวอาจจะดูเป็นการ 'ขี่ช้างจับตั๊กแตน' เกินไป
 
 3. **Instance Executor**: เป็น Executor ที่ใช้วิธีสร้าง Instance (เครื่อง VM, VPS) ขึ้นมาใหม่เป็น Runner ชั่วคราว (Ephemeral Runner) เพื่อใช้รัน CI/CD Job โดยเฉพาะ<br>
 ข้อดี: เป็นระบบแบบ Auto-scaling ที่ใช้ Fleeting library เพราะเครื่อง runner ชั่วคราว จะถูกสร้างขึ้นมาเมื่อมี CI/CD Job และทำลายทิ้งเมื่อรันเสร็จ วิธีนี้ช่วยควบคุมค่าใช้จ่ายได้ตามการใช้งานจริง ไม่ต้องมีเครื่อง Runner ไว้รอ CI/CD Jobs<br>
@@ -43,17 +43,17 @@ weight: 1       # You can add weight to some posts to override the default sorti
 โดย Fleeting จะไม่ได้สื่อสารกับ Cloud Provider โดยตรง แต่จะใช้ Fleeting Plugin ซึ่งถูกรันขึ้นมาเป็น Sub-process ย่อยอีกที (หรือจะมองว่าเป็น API Server เล็กๆ ที่รอรับคำสั่งจาก Fleeting ก็ได้)
 ![gitlab fleeting](gitlab-fleeting.drawio.svg)
 
-เมื่อเปรียบเทียบข้อดีและข้แเสียของแต่ละ Executor แล้ว ดูเหมือน Docker Autoscaler จะเป็นตัวเลือกที่ดีที่สุดสำหรับโปรเจคนี้ของผม
+เมื่อเปรียบเทียบข้อดีและข้อเสียของแต่ละ Executor แล้ว ดูเหมือน Docker Autoscaler จะเป็นตัวเลือกที่ดีที่สุดสำหรับโปรเจคนี้ของผม.
 ## ปัญหา
 หลังจากที่ผมตัดสินใจได้ว่า Docker Autoscaler Executor คือตัวเลือกที่ลงตัวที่สุด แต่เมื่อเริ่มลงลึกในรายละเอียดการติดตั้ง ผมกลับเจออุปสรรคสำคัญเข้าจนได้<br>
-เพราะใน GitLab มี Fleeting Plugin รองรับให้เฉพาะ Cloud Provider เจ้าใหญ่ๆเท่านั้น เช่น AWS, Azure และ Google Cloud แต่สำหรับ Digital Ocean ที่เป็น Cloud Provider ระดับกลางๆและเป็น Cloud Provider ที่ผมเลือกใช้ เหมือนจะไม่มี Fleeting Plugin มาให้ ในตอนนี้ผมจึงมีอยู่ 2 ทางเลือก<br>
-**เปลี่ยน Cloud Provider**: ยอมเปลี่ยนไปใช้ AWS หรือ Google Cloud เพื่อให้สามารถ Setup ง่ายๆได้ตาม Document<br>
-**สู้ต่อ**: ผมลองค้นหาและทำความเข้าใจกับ Fleeting Library อยู่สักพัก ก็พบว่า จริงๆแล้ว Gitlab มีเหตุผลที่ไม่ได้มี Fleeting Plugin มาให้กับ Cloud Provider ทุกเจ้า โดยที่ไปที่มาคือ เมื่อก่อน Gitlab เลือกใช้ [Docker machine](https://github.com/docker-archive-public/docker.machine) เป็นวิธีในการทำ Auto Scaling ให้กับ Runners <br>แต่เนื่องด้วยโปรเจค Docker Machine หยุดการพัฒนาไปและไม่มีการดูแลต่อ ทำให้ Gitlab ต้องมองหา solution ใหม่เข้ามาแทน จนเกิดเป็น Fleeting Library โดย Gitlab อะธิบายไว้อย่างละเอียดใน ['Next Runner Auto-scaling Architecture'](https://handbook.gitlab.com/handbook/engineering/architecture/design-documents/runner_scaling/)
-โดยหลักการทำงานของ Fleeting คือ การเป็น Interface ให้ใครก็ตามสามารถเขียน plugin มา implement ให้เข้ากับ API ของ Cloud Provider ใดๆก็ได้ 
-ยกตัวอย่างเช่น Fleeting ไม่ได้สนว่า Cloud Provider เจ้าไหนที่ User กำลังใช้งานอยู่ ขอแค่เมื่อ Fleeting เรียกใช้งานฟังค์ชั่น Increase(3) Cloud provider สร้าง Instance group มาให้ 3 ตัวพร้อมกับ IP Address แค่นั้นพอ.
-นี่จึงทำให้ Fleeting มีความยืดหยุ่นค่อนข้างสูง.
-ดังนั้น Fleeting plugin ของ Digital Ocean จึงเป็น task ของฝั่ง Digital Ocean (Users) มากกว่าที่ต้องเขียน Plugin มา implement Fleeting Interface<br>
-แต่ก่อนที่ผมจะลงมือหา Document เขียน Fleeting plugin ของ Digital Ocean ด้วยตัวเอง โชคดีที่ไปเจอ Open-source project ที่มีคนเขียนไว้ก่อนหน้าแล้ว [DigitalOcean Fleeting Plugin](https://gitlab.com/bearx3f/fleeting-plugin-digitalocean).
+เพราะใน GitLab มี Fleeting Plugin รองรับให้เฉพาะ Cloud Provider เจ้าใหญ่ๆเท่านั้น เช่น AWS, Azure และ Google Cloud แต่สำหรับ Digital Ocean ที่เป็น Cloud Provider ระดับกลางๆและเป็น Cloud Provider ที่ผมเลือกใช้ เหมือนจะไม่มี Fleeting Plugin มาให้<br>
+ในขณะที่ผมกำลังลังเลว่าจะยอมเปลี่ยนไปใช้ AWS หรือ Google Cloud เพื่อให้สามารถ Setup ง่ายๆได้ตาม document หรือไม่<br>
+ผมก็ลองหาข้อมูลและทำความเข้าใจกับ Fleeting Library ไปด้วย แล้วก็พบว่า จริงๆ Gitlab มีเหตุผลที่ไม่ได้มี Fleeting Plugin มาคอย support ให้กับ Cloud Provider ทุกเจ้า เพราะก่อนหน้านี้ Gitlab เลือกใช้ [Docker machine](https://github.com/docker-archive-public/docker.machine) เป็นวิธีในการทำ Auto Scaling ให้กับ Runners <br>แต่เนื่องด้วยโปรเจค Docker Machine หยุดการพัฒนาไปและไม่มีการดูแลต่อ ทำให้ Gitlab ต้องมองหา solution ใหม่เข้ามาแทน จนเกิดเป็น Fleeting Library โดย Gitlab อะธิบายไว้อย่างละเอียดใน ['Next Runner Auto-scaling Architecture'](https://handbook.gitlab.com/handbook/engineering/architecture/design-documents/runner_scaling/)<br>
+หลักการทำงานคร่าวๆของ Fleeting คือ การเป็น Interface ให้กับ Runner manager นั่นเอง
+ยกตัวอย่างเช่น Runner manager เองไม่จำเป็นต้องรู้เลยว่าเราใช้ Cloud ของเจ้าไหนอยู่ แค่สั่งผ่าน Fleeting ว่าขอ Instance 3 ตัว มาเป็น Runner ย่อย (Ephemical runners) Fleeting จะเรียกใช้งานฟังค์ชั่น Increase(3) Cloud provider ต้องสร้าง Instance group มาให้ 3 ตัวพร้อมกับ IP Address แค่นั้นพอ.
+นี่จึงทำให้ Fleeting มีความยืดหยุ่นค่อนข้างสูง.<br>
+ดังนั้นการสร้าง Fleeting plugin ของ Digital Ocean จึงเป็น task ของฝั่ง Digital Ocean (Users) มากกว่าที่ต้องเขียน Plugin มา implement Interface ของ Fleeting<br>
+แต่ก่อนที่ผมจะลงมือหา Document เขียน Fleeting plugin ของ Digital Ocean โชคดีที่ไปเจอว่า มีคนเขียนไว้ก่อนหน้าแล้ว [DigitalOcean Fleeting Plugin](https://gitlab.com/bearx3f/fleeting-plugin-digitalocean).
 
 ## ลงมือทำ
 เมื่อหาข้อมูลพอสมควรแล้ว ทีนี้ก็เหลือแค่ลงมือทำ
@@ -205,8 +205,6 @@ sudo journalctl -u gitlab-runner -f
 
 ต่อมา ผมจะเตรียม CI/CD pipeline ที่เครื่อง Local เพื่อ push ไปยัง Gitlab Repository ที่เตรียมไว้
 
-TODO: เปลี่ยนมาใช้ golang ทำ api server ง่ายๆ เพื่อจะให้ กระบวนการ CI make sense, ตอนนี้ ใช้ pre-image ซึ่งไม่ make sense ในการ รัน CI!!!
-
 * สร้างไฟล์ ```Dockerfile```<br>
 docker image ที่ผมเลือกใช้คือ http-https-echo ซึ่งเป็น Image ที่ใช้สำหรับตรวจสอบ Request ที่ส่งเข้ามา และ ตอบกลับด้วย ข้อมูลของ request นั้น
 
@@ -226,7 +224,7 @@ stages:
 default:
   image: docker:25
   tags:
-    - my-project-1 # ใน่ชื่อ tag ให้ตรงกับที่สร้างไว้ในตอนต้น
+    - my-project-1 # ใส่ชื่อ tag ให้ตรงกับที่สร้างไว้ในตอนต้น
 
 # build image และ push ไปที่ GitLab Container Registry
 docker_publish_image:
